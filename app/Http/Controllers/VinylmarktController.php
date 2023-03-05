@@ -3,30 +3,77 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Symfony\Component\DomCrawler\Crawler;
 
 class VinylmarktController extends Controller
 {
-    public function fillLinks()
+    public static $domen = 'vinylmarkt.ru';
+    public function show()
     {
-        // dd();
+        $products = Product::where('website', self::$domen)->get();
+        return view('vinylmarkt.show', compact('products'));
+    }
+
+    public function export(Request $request)
+    {
+        $getFields = $request->fields;
+
+        $products = Product::selectRaw($getFields ? implode(',', $getFields) : '*')
+            ->where('website', '=', self::$domen)
+            ->where('tilda_uid', '!=', 0)
+            ->orderBy('updated_at', 'desc')->get()->toArray();
+
+        $theads = array_keys($products[0]);
+
+        $date = Carbon::now()->toDateString();
+        $filename = self::$domen . '_'  . $date . '.csv';
+
+        $headers = array(
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        );
+
+        $callback = function() use($products, $theads) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $theads, ';');
+
+            foreach ($products as $product) {
+                fputcsv($handle, $product, ';');
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+    public function fillLinks(Request $request)
+    {
         $mainLink = 'https://vinylmarkt.ru/catalog/vinilovye_plastinki/';
         $html = file_get_contents($mainLink);
 
         $crawler = new Crawler(null, $mainLink);
         $crawler->addHtmlContent($html, 'UTF-8');
 
-        $startPage = 1;
-        $lastPage = (int) $crawler->filter('div.module-pagination > div > a')->last()->text();
+        $currentPage = (int) $request->fill_from ? $request->fill_from : 1;
+        if ($request->fill_to) {
+            $lastPage = (int) $request->fill_to;
+        }else {
+            $lastPage = (int) $crawler->filter('div.module-pagination > div > a')->last()->text();
+        }
+        
 
         unset($crawler, $html);
 
         $counter = 0;
-        for ($startPage = 15; $startPage <= $lastPage; $startPage++) {
-            try {
-                $PaginationPage = $mainLink . '?PAGEN_1=' . $startPage;
-                $html = file_get_contents($PaginationPage);
+
+        for ($currentPage = 15; $currentPage <= 16; $currentPage++) {
+            $PaginationPage = $mainLink . '?PAGEN_1=' . $currentPage;
+            if ($html = file_get_contents($PaginationPage)) {
                 $crawler = new Crawler(null, $PaginationPage);
                 $crawler->addHtmlContent($html, 'UTF-8');
 
@@ -34,161 +81,107 @@ class VinylmarktController extends Controller
 
                     $ProductRelativeLink = $node->filter('div.item_info.N > div.item_info--top_block > div.item-title > a')->attr('href');
 
-                    $website_domen = 'vinylmarkt.ru';
-
-                    Product::updateOrCreate(
-                        [
-                            'website' => $website_domen,
-                            'product_url' => $ProductRelativeLink
-                        ],
-                    );
+                    Product::updateOrCreate([
+                        'website' => self::$domen,
+                        'product_url' => $ProductRelativeLink
+                    ]);
 
                     return $ProductRelativeLink;
                 });
-
                 unset($crawler, $html, $PaginationPage, $catalogBlockAtPage);
+
                 $counter++;
                 if ($counter % 100 == 0) {
                     sleep(100);
                 }
-            } catch (InvalidArgumentException $e) { // I guess its InvalidArgumentException in this case
-                // Node list is empty
+            } else {
+                dd('Появилась ошибка на странице ' . $currentPage);
             }
         }
-        dd('success');
+
+        return redirect()->route('vinylmarkt.show')->with('successMsg', 'Идентификаторы обновлены');
     }
 
     public function updateProducts()
     {
-        $products = Product::where('website', 'vinylmarkt.ru')->orderBy('updated_at', 'desc')->get();
-
+        $products = Product::where('website', '=', self::$domen)
+            ->where('tilda_uid', '=', 0)
+            ->orderBy('updated_at', 'desc')->get();
+        $counter = 0;
         foreach ($products as $product) {
+            if ($productHtml = file_get_contents('http://' . $product->website . $product->product_url)) {
+                $crawler = new Crawler(null, $productHtml);
+                $crawler->addHtmlContent($productHtml, 'UTF-8');
 
-            $productHtml = file_get_contents('http://' . $product->website . $product->product_url);
+                /* brand */
+                $product->brand = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
 
-            $crawler = new Crawler(null, $productHtml);
-            $crawler->addHtmlContent($productHtml, 'UTF-8');
+                /* description */
+                $product->description = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
 
-            /* brand */
-            $product->brand = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
+                /* category */
+                $_category = explode('/', $crawler->filter('meta[itemprop=category]')->attr('content'));
+                unset($_category[0]);
+                $product->category = implode(';', $_category);
 
-            /* description */
-            $product->description = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
+                /* title */
+                $titleArr = explode('/', $crawler->filter('meta[itemprop=name]')->attr('content'));
+                if (array_key_exists(1, $titleArr)) {
+                    $product->title = $titleArr[1];
+                }
 
-            /* category */
-            $_category = explode('/', $crawler->filter('meta[itemprop=category]')->attr('content'));
-            unset($_category[0]);
-            $product->category = implode(';', $_category);
-
-            /* title */
-            $titleArr = explode('/', $crawler->filter('meta[itemprop=name]')->attr('content'));
-            if (array_key_exists(1, $titleArr)) {
-                $product->title = $titleArr[1];
-            }
-
-            /* text */
-            $propertyArr = $crawler->filter('table.props_list tr')->each(function (Crawler $node, $i) {
-                return $node->filter('.char_name')->text() . ' => ' . $node->filter('.char_value')->text();
-            });
-            foreach ($propertyArr as $property) {
-                $property = explode(' => ', $property);
-                $product->text .= '<p style=""font-size: 20px;""><span style=""font-weight: 400;"">' . $property[0] . ':</span><span> ' . $property[1] . '</span></p>';
-            }
-
-
-            dump($product->product_url);
-            /* photo */
-            if ($crawler->filter('div.slides ul li')) {
-                $photoArr = $crawler->filter('div.slides ul li')->each(function (Crawler $node, $i) {
-                    if ($node->filter('a')->count() > 0) {
-                        return 'https://vinylmarkt.ru' . $node->filter('a')->attr('href');
-                    }
-                    return 'https://via.placeholder.com/150/FFFFFF/808080/?text=no+photo';
+                /* text */
+                $propertyArr = $crawler->filter('table.props_list tr')->each(function (Crawler $node, $i) {
+                    return $node->filter('.char_name')->text() . ' => ' . $node->filter('.char_value')->text();
                 });
-                $product->photo = implode(' ', $photoArr);
+                foreach ($propertyArr as $property) {
+                    $property = explode(' => ', $property);
+                    $product->text .= '<p style=""font-size: 20px;""><span style=""font-weight: 400;"">' . $property[0] . ':</span><span> ' . $property[1] . '</span></p>';
+                    if ($property[0] == 'Баркод') {
+                        $product->tilda_uid = $property[1];
+                    }
+                }
+
+                $photoArr = [];
+                /* photo */
+                if ($crawler->filter('div.slides ul li')) {
+                    $photoArr = $crawler->filter('div.slides ul li')->each(function (Crawler $node, $i) {
+                        if ($node->filter('a')->count() > 0) {
+                            return 'https://vinylmarkt.ru' . $node->filter('a')->attr('href');
+                        }
+                        return 'https://via.placeholder.com/150/FFFFFF/808080/?text=no+photo';
+                    });
+                    $product->photo = implode(' ', $photoArr);
+                }
+
+
+                /* seo */
+                $product->seo_title = 'Виниловая пластинка ' . $product->brand . ' - альбом ' . $product->title . ' | Интернет-магазин NAVINILE.RU';
+                $product->seo_descr = $product->title . ' - альбом группы ' . $product->brand . ' на виниле' . ' | Интернет-магазин NAVINILE.RU | Заказ оп тел.: +7 499 677-23-27';
+                $product->seo_keywords = $product->title . ', ' . $product->brand;
+
+                /* price */
+                $product->price = (float) $crawler->filter('meta[itemprop=price]')->attr('content');
+
+
+                /* video */
+                $videoArr = $crawler->filter('table.video_table tbody tr')->each(function (Crawler $node, $i) {
+                    return $node->filter('iframe')->attr('src');
+                });
+                $product->video = implode(' ', $videoArr);
+
+
+                /* video */
+                $videoArr = $crawler->filter('table.video_table tbody tr')->each(function (Crawler $node, $i) {
+                    return $node->filter('iframe')->attr('src');
+                });
+                $product->video = implode(' ', $videoArr);
+
+                $product->update();
+                unset($productHtml, $crawler, $_category, $titleArr, $propertyArr, $photoArr, $videoArr);
+                $counter++;
             }
-
-
-            /* seo */
-            $product->seo_title = 'Виниловая пластинка ' . $product->brand . ' - альбом ' . $product->title . ' | Интернет-магазин NAVINILE.RU';
-            $product->seo_descr = $product->title . ' - альбом группы ' . $product->brand . ' на виниле' . ' | Интернет-магазин NAVINILE.RU | Заказ оп тел.: +7 499 677-23-27';
-            $product->seo_keywords = $product->title . ', ' . $product->brand;
-
-            /* price */
-            $product->price = (float) $crawler->filter('meta[itemprop=price]')->attr('content');
-
-
-            /* video */
-            $videoArr = $crawler->filter('table.video_table tbody tr')->each(function (Crawler $node, $i) {
-                return $node->filter('iframe')->attr('src');
-            });
-            $product->video = implode(' ', $videoArr);
-
-
-            /* video */
-            $videoArr = $crawler->filter('table.video_table tbody tr')->each(function (Crawler $node, $i) {
-                return $node->filter('iframe')->attr('src');
-            });
-            $product->video = implode(' ', $videoArr);
-
-
-            // dd($product);
-            $product->update();
         }
-        dd($products);
-    }
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('vinylmarkt.show')->with('successMsg', 'Обновлено: ' . $counter . ' записей');
     }
 }

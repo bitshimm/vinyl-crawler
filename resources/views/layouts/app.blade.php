@@ -28,6 +28,12 @@
             flex-wrap: wrap;
             background-color: #e6e7ee;
         }
+        .successMsg{
+            font-size: 20px;
+            text-align: center;
+            width: 100%;
+            
+        }
     </style>
 </body>
 

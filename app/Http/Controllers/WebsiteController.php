@@ -10,18 +10,6 @@ class WebsiteController extends Controller
     public function index()
     {
         return view('index');
-        $this->fillLinks();
-    }
-
-    public function show()
-    {
-        return view('show');
-    }
-    public function export(Request $request)
-    {
-        // dump();
-        dump($request->all());
-        // return view('show');
     }
 
     public function fillLinks()

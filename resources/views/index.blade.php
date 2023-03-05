@@ -2,7 +2,7 @@
 
 @section('content')
     <ul class="links">
-        <li class="link"><a href="{{ route('show') }}">vinymarkt</a></li>
+        <li class="link"><a href="{{ route('vinylmarkt.show') }}">vinymarkt</a></li>
         <li class="link"><a href="">vinymarkt 2</a></li>
         <li class="link"><a href="">vinymarkt 3</a></li>
     </ul>

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('website')->nullable()->default('');
             $table->string('product_url')->nullable()->default('');
-            $table->integer('tilda_uid')->unsigned()->default(0);
+            $table->bigInteger('tilda_uid')->unsigned()->default(0);
             $table->string('brand')->nullable()->default('');
             $table->text('description')->nullable();
             $table->string('category')->nullable()->default('');
