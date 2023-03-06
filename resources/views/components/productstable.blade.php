@@ -8,7 +8,7 @@
         <tr>
             <th>ID</th>
             <th>website</th>
-            <th>url</th>
+            <th>tilda_uid</th>
             <th>brand</th>
             <th>description</th>
         </tr>
@@ -18,7 +18,7 @@
             <tr>
                 <td>{{ $product->id }}</td>
                 <td>{{ $product->website }}</td>
-                <td>{{ $product->product_url }}</td>
+                <td>{{ $product->tilda_uid }}</td>
                 <td>{{ $product->brand }}</td>
                 <td>{{ $product->description }}</td>
             </tr>

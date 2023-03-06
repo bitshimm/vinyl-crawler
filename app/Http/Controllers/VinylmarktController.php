@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\File;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\DomCrawler\Crawler;
 
 class VinylmarktController extends Controller
 {
     public static $domen = 'vinylmarkt.ru';
+    public static $filesCounter = 0;
+
     public function show()
     {
         $products = Product::where('website', self::$domen)->get();
@@ -18,6 +22,39 @@ class VinylmarktController extends Controller
 
     public function export(Request $request)
     {
+        $getFields = $request->fields;
+
+        Product::selectRaw($getFields ? implode(',', $getFields) : '*')
+            ->where('website', '=', self::$domen)
+            ->where('tilda_uid', '!=', 0)
+            ->orderBy('updated_at', 'desc')
+            ->chunk(100, function ($products) {
+                self::$filesCounter++;
+
+                $products = $products->toArray();
+                $theads = array_keys($products[0]);
+
+                // $date = Carbon::now()->toDateString();
+                $path = 'csv/' . self::$domen;
+                $filename = self::$filesCounter . '.csv';
+
+                Storage::disk('public')->put($path . '/' . $filename, implode(';', $theads), 'public');
+                foreach ($products as $product) {
+                    Storage::disk('public')->append($path . '/' . $filename, implode(';', $product));
+                }
+
+                // $handle = fopen(public_path($path . '/' . $filename), 'w+');
+                // fputcsv($handle, $theads, ';');
+
+                // foreach ($products as $product) {
+                //     fputcsv($handle, $product, ';');
+                // }
+
+                // fclose($handle);
+            });
+        return redirect()->route('vinylmarkt.show');
+        dd('success');
+        $maxSize = 10;
         $getFields = $request->fields;
 
         $products = Product::selectRaw($getFields ? implode(',', $getFields) : '*')
@@ -38,7 +75,7 @@ class VinylmarktController extends Controller
             "Expires"             => "0"
         );
 
-        $callback = function() use($products, $theads) {
+        $callback = function () use ($products, $theads) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, $theads, ';');
 
@@ -62,16 +99,16 @@ class VinylmarktController extends Controller
         $currentPage = (int) $request->fill_from ? $request->fill_from : 1;
         if ($request->fill_to) {
             $lastPage = (int) $request->fill_to;
-        }else {
+        } else {
             $lastPage = (int) $crawler->filter('div.module-pagination > div > a')->last()->text();
         }
-        
+
 
         unset($crawler, $html);
 
         $counter = 0;
 
-        for ($currentPage = 15; $currentPage <= 16; $currentPage++) {
+        for (; $currentPage <= $lastPage; $currentPage++) {
             $PaginationPage = $mainLink . '?PAGEN_1=' . $currentPage;
             if ($html = file_get_contents($PaginationPage)) {
                 $crawler = new Crawler(null, $PaginationPage);
@@ -137,7 +174,7 @@ class VinylmarktController extends Controller
                 foreach ($propertyArr as $property) {
                     $property = explode(' => ', $property);
                     $product->text .= '<p style=""font-size: 20px;""><span style=""font-weight: 400;"">' . $property[0] . ':</span><span> ' . $property[1] . '</span></p>';
-                    if ($property[0] == 'Баркод') {
+                    if ($property[0] == 'Баркод' && is_numeric($property[1])) {
                         $product->tilda_uid = $property[1];
                     }
                 }
