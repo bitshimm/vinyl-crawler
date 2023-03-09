@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\DomCrawler\Crawler;
+use ZipArchive;
 
 class VinylmarktController extends Controller
 {
@@ -29,19 +30,32 @@ class VinylmarktController extends Controller
             ->where('tilda_uid', '!=', 0)
             ->orderBy('updated_at', 'desc')
             ->chunk(100, function ($products) {
+                global $timestampMs;
                 self::$filesCounter++;
 
                 $products = $products->toArray();
                 $theads = array_keys($products[0]);
 
-                // $date = Carbon::now()->toDateString();
-                $path = 'csv/' . self::$domen;
-                $filename = self::$filesCounter . '.csv';
-
-                Storage::disk('public')->put($path . '/' . $filename, implode(';', $theads), 'public');
+                $date = Carbon::now()->toDateString();
+                $filepath = 'temp_csv/' . self::$domen . '/' . self::$domen . '_' . $date . '_' . self::$filesCounter . '.csv';
+                $publicDisk = Storage::disk('public');
+                $archivePath = self::$domen . '/' . $date . '.zip';
+                // dd(public_path('storage/' . $archivePath));
+                $publicDisk->put($filepath, implode(';', $theads), 'public');
                 foreach ($products as $product) {
-                    Storage::disk('public')->append($path . '/' . $filename, implode(';', $product));
+                    $product['category'] = '"' .  $product['category'] . '"';
+                    $publicDisk->append($filepath, implode(';', $product));
                 }
+
+                $zip = new ZipArchive();
+                $zip->open($archivePath);
+                $zip->open(public_path($archivePath), ZipArchive::CREATE);
+                $zip->addFile(public_path('storage/' . $filepath), 'part_' . self::$filesCounter . '.csv');
+                $zip->close();
+                if ($publicDisk->exists($filepath)) {
+                    $publicDisk->delete($filepath);
+                }
+                unset($date);
 
                 // $handle = fopen(public_path($path . '/' . $filename), 'w+');
                 // fputcsv($handle, $theads, ';');
@@ -52,41 +66,17 @@ class VinylmarktController extends Controller
 
                 // fclose($handle);
             });
+        $date = Carbon::now()->toDateString();
+        $archivePath = self::$domen . '/' . $date . '.zip';
+        header("Content-type: application/zip");
+        header("Content-Disposition: attachment; filename=$archivePath");
+        header("Content-length: " . filesize($archivePath));
+        header("Pragma: no-cache");
+        header("Expires: 0");
+        unset($date);
+        readfile("$archivePath");
         return redirect()->route('vinylmarkt.show');
         dd('success');
-        $maxSize = 10;
-        $getFields = $request->fields;
-
-        $products = Product::selectRaw($getFields ? implode(',', $getFields) : '*')
-            ->where('website', '=', self::$domen)
-            ->where('tilda_uid', '!=', 0)
-            ->orderBy('updated_at', 'desc')->get()->toArray();
-
-        $theads = array_keys($products[0]);
-
-        $date = Carbon::now()->toDateString();
-        $filename = self::$domen . '_'  . $date . '.csv';
-
-        $headers = array(
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        );
-
-        $callback = function () use ($products, $theads) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $theads, ';');
-
-            foreach ($products as $product) {
-                fputcsv($handle, $product, ';');
-            }
-
-            fclose($handle);
-        };
-
-        return response()->stream($callback, 200, $headers);
     }
     public function fillLinks(Request $request)
     {
