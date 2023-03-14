@@ -34,6 +34,15 @@
             width: 100%;
             
         }
+        .shadow_inside {
+            padding: 10px;
+            box-shadow: inset 2px 2px 5px #b8b9be, inset -3px -3px 7px #fff;
+        }
+        .shadow_outside {
+            border-radius: 5px;
+            border-color: #d1d9e6;
+            box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+        }
     </style>
 </body>
 

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="show_section">
+    <div class="show_section shadow_inside">
         <div class="show_left_section">
             <div class="show_left_top_section">
                 <form action="{{ route('vinylmarkt.fillLinks') }}" class="form_data_move">
@@ -9,7 +9,7 @@
                     <input type="number" name="fill_to" placeholder="До" min="1">
                     <input type="submit" value="Обновить идентификаторы">
                 </form>
-                
+
             </div>
             <div class="show_left_top_section">
                 <form action="{{ route('vinylmarkt.updateProducts') }}" class="form_data_move">
@@ -81,7 +81,7 @@
             </div>
         </div>
 
-        <div class="show_table">
+        <div class="visual_wrapper">
             <x-productstable :$products />
         </div>
     </div>
@@ -103,9 +103,6 @@
         .show_left_top_section {
             margin-bottom: 20px;
             width: 100%;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #fff;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -117,19 +114,14 @@
             text-decoration: none;
             text-align: center;
             color: #9baacf;
-            box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
-            padding: 10px 20px;
             width: 100%;
-            border-radius: 5px;
         }
 
         .form_data_move {
             width: 100%;
             display: flex;
             flex-wrap: wrap;
-            padding: 5px;
-            box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
-            gap: 5px 0 ;
+            gap: 5px 0;
         }
 
         .form_data_move input {
@@ -137,30 +129,15 @@
             display: block;
             padding: 5px 10px;
             font-size: 16px;
-            border-radius: 5px;
             border: none;
         }
 
-        .show_table {
-            width: 100%;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #fff;
-        }
-
-        .show_table table {
+        .visual_wrapper {
             width: 100%;
         }
 
-        .show_export_fields {
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #fff;
-
-        }
-
-        .show_export_fields form {
-            box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+        .visual_wrapper table {
+            width: 100%;
         }
 
         .custom_checkbox_block label {
@@ -169,7 +146,6 @@
             justify-content: space-between;
             user-select: none;
             cursor: pointer;
-            /* box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff; */
             padding: 10px 5px;
             border-radius: 5px;
             position: relative;
@@ -187,29 +163,29 @@
         }
 
         /* .custom_checkbox_block label::after {
-                                    content: '';
-                                    position: absolute;
-                                    left: 1px;
-                                    color: #5b0eeb;
-                                    display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        flex-shrink: 0;
-                                        flex-grow: 0;
-                                    width: 15px;
-                                    height: 15px;
+                                        content: '';
+                                        position: absolute;
+                                        left: 1px;
+                                        color: #5b0eeb;
+                                        display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            flex-shrink: 0;
+                                            flex-grow: 0;
+                                        width: 15px;
+                                        height: 15px;
 
-                                    border-radius: 0.25em;
-                                        background-repeat: no-repeat;
-                                        background-position: center center;
-                                        background-size: 50% 50%;
-                                    margin-left: 30px;
-                                    box-shadow: inset 1px 1px 3px #b8b9be, inset -1px -1px 3px #fff;
-                                } */
+                                        border-radius: 0.25em;
+                                            background-repeat: no-repeat;
+                                            background-position: center center;
+                                            background-size: 50% 50%;
+                                        margin-left: 30px;
+                                        box-shadow: inset 1px 1px 3px #b8b9be, inset -1px -1px 3px #fff;
+                                    } */
 
         /* .custom_checkbox_block input:checked~label::after {
-                                    content: '\1F5F8';
-                                } */
+                                        content: '\1F5F8';
+                                    } */
 
         .custom_checkbox_block input:checked~label {
             color: #5b0eeb;
@@ -224,7 +200,7 @@
             color: #fff;
             font-size: 14px;
             background: #6d5dfc;
-            box-shadow: inset 0.2rem 0.2rem 1rem #8abdff, inset -0.2rem -0.2rem 1rem #5b0eeb, 0.3rem 0.3rem 0.6rem #c8d0e7, -0.2rem -0.2rem 0.5rem #fff;
+            /* box-shadow: inset 0.2rem 0.2rem 1rem #8abdff, inset -0.2rem -0.2rem 1rem #5b0eeb, 0.3rem 0.3rem 0.6rem #c8d0e7, -0.2rem -0.2rem 0.5rem #fff; */
         }
     </style>
 @endsection

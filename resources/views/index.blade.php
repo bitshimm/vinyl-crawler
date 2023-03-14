@@ -17,9 +17,7 @@
         }
 
         .link {
-            border-radius: 6px;
             border-color: #d1d9e6;
-            box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
             transition: .2s;
         }
 

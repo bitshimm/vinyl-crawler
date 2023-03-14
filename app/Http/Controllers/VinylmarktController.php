@@ -13,71 +13,72 @@ use ZipArchive;
 class VinylmarktController extends Controller
 {
     public static $domen = 'vinylmarkt.ru';
-    public static $filesCounter = 0;
 
     public function show()
     {
+        // phpinfo();die();
         $products = Product::where('website', self::$domen)->get();
         return view('vinylmarkt.show', compact('products'));
     }
 
     public function export(Request $request)
     {
+        header_remove();
         $getFields = $request->fields;
 
-        Product::selectRaw($getFields ? implode(',', $getFields) : '*')
+        $products = Product::selectRaw($getFields ? implode(',', $getFields) : '*')
             ->where('website', '=', self::$domen)
             ->where('tilda_uid', '!=', 0)
+            ->whereNotNull('photo')
             ->orderBy('updated_at', 'desc')
-            ->chunk(100, function ($products) {
-                global $timestampMs;
-                self::$filesCounter++;
+            ->get();
 
-                $products = $products->toArray();
-                $theads = array_keys($products[0]);
+        $products = collect($products->toArray());
 
-                $date = Carbon::now()->toDateString();
-                $filepath = 'temp_csv/' . self::$domen . '/' . self::$domen . '_' . $date . '_' . self::$filesCounter . '.csv';
-                $publicDisk = Storage::disk('public');
-                $archivePath = self::$domen . '/' . $date . '.zip';
-                // dd(public_path('storage/' . $archivePath));
-                $publicDisk->put($filepath, implode(';', $theads), 'public');
-                foreach ($products as $product) {
-                    $product['category'] = '"' .  $product['category'] . '"';
-                    $publicDisk->append($filepath, implode(';', $product));
-                }
-
-                $zip = new ZipArchive();
-                $zip->open($archivePath);
-                $zip->open(public_path($archivePath), ZipArchive::CREATE);
-                $zip->addFile(public_path('storage/' . $filepath), 'part_' . self::$filesCounter . '.csv');
-                $zip->close();
-                if ($publicDisk->exists($filepath)) {
-                    $publicDisk->delete($filepath);
-                }
-                unset($date);
-
-                // $handle = fopen(public_path($path . '/' . $filename), 'w+');
-                // fputcsv($handle, $theads, ';');
-
-                // foreach ($products as $product) {
-                //     fputcsv($handle, $product, ';');
-                // }
-
-                // fclose($handle);
-            });
         $date = Carbon::now()->toDateString();
+        $publicDisk = Storage::disk('public');
+        $filesDirectory = self::$domen . '/' . $date;
         $archivePath = self::$domen . '/' . $date . '.zip';
-        header("Content-type: application/zip");
-        header("Content-Disposition: attachment; filename=$archivePath");
-        header("Content-length: " . filesize($archivePath));
-        header("Pragma: no-cache");
-        header("Expires: 0");
+        $filesCounter = 0;
+
+        if (Storage::exists($archivePath)) {
+            Storage::delete($archivePath);
+        }
+
+        $zip = new ZipArchive();
+        $zip->open(public_path('storage/' . $archivePath), ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $zip->close();
+
+        foreach ($products->chunk(400) as $chunk) {
+            $filesCounter++;
+
+            $theads = array_keys($products[0]);
+
+            $filepath = $filesDirectory . '/' . $filesCounter . '.csv';
+
+            $publicDisk->put($filepath, implode(';', $theads), 'public');
+
+            foreach ($chunk as $product) {
+                if (isset($product['category'])) {
+                    $product['category'] = '"' .  $product['category'] . '"';
+                }
+                $product['text'] = '"' . $product['text'] . '"';
+                $publicDisk->append($filepath, implode(';', $product));
+            }
+
+            $zip = new ZipArchive();
+            $zip->open(public_path('storage/' . $archivePath), ZipArchive::CREATE);
+            $zip->addFile('storage/' . $filepath);
+            $zip->close();
+        }
+
+        Storage::deleteDirectory($filesDirectory);
+
         unset($date);
-        readfile("$archivePath");
-        return redirect()->route('vinylmarkt.show');
-        dd('success');
+
+        return Storage::download($archivePath);
     }
+
     public function fillLinks(Request $request)
     {
         $mainLink = 'https://vinylmarkt.ru/catalog/vinilovye_plastinki/';
@@ -141,7 +142,11 @@ class VinylmarktController extends Controller
                 $crawler->addHtmlContent($productHtml, 'UTF-8');
 
                 /* brand */
-                $product->brand = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
+                if ($crawler->filter('meta[itemprop=brand]')->count()) {
+                    $product->brand = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
+                } else {
+                    continue;
+                }
 
                 /* description */
                 $product->description = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
@@ -169,16 +174,18 @@ class VinylmarktController extends Controller
                     }
                 }
 
-                $photoArr = [];
                 /* photo */
-                if ($crawler->filter('div.slides ul li')) {
+                $photoArr = [];
+                if ($crawler->filter('div.slides ul li')->count()) {
                     $photoArr = $crawler->filter('div.slides ul li')->each(function (Crawler $node, $i) {
-                        if ($node->filter('a')->count() > 0) {
+                        if ($node->filter('a')->count()) {
                             return 'https://vinylmarkt.ru' . $node->filter('a')->attr('href');
                         }
-                        return 'https://via.placeholder.com/150/FFFFFF/808080/?text=no+photo';
+                        return '';
                     });
                     $product->photo = implode(' ', $photoArr);
+                } else {
+                    continue;
                 }
 
 
