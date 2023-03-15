@@ -28,17 +28,24 @@
             flex-wrap: wrap;
             background-color: #e6e7ee;
         }
-        .successMsg{
+
+        .successMsg {
             font-size: 20px;
             text-align: center;
             width: 100%;
-            
+            color: #fff;
+            margin-bottom: 1em;
+            background-color: #6d5dfc;
         }
+
         .shadow_inside {
             padding: 10px;
+            border-radius: 5px;
             box-shadow: inset 2px 2px 5px #b8b9be, inset -3px -3px 7px #fff;
         }
+
         .shadow_outside {
+            padding: 5px;
             border-radius: 5px;
             border-color: #d1d9e6;
             box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;

@@ -62,7 +62,9 @@ class VinylmarktController extends Controller
                 if (isset($product['category'])) {
                     $product['category'] = '"' .  $product['category'] . '"';
                 }
-                $product['text'] = '"' . $product['text'] . '"';
+                if (isset($product['category'])) {
+                    $product['text'] = '"' . $product['text'] . '"';
+                }
                 $publicDisk->append($filepath, implode(';', $product));
             }
 

@@ -1,16 +1,9 @@
 @if (session()->has('successMsg'))
-    <div class="successMsg">
+    <div class="successMsg shadow_outside">
         {{ session()->get('successMsg') }}
     </div>
-    <style>
-        .successMsg {
-            color: #fff;
-            margin-bottom: 1em;
-            background-color: #6d5dfc;
-        }
-    </style>
 @endif
-<div class="products_table">
+<div class="products_table shadow_outside">
     <table>
         <thead>
             <tr>
@@ -24,6 +17,7 @@
         <tbody>
             @foreach ($products as $product)
                 <tr>
+
                     <td>{{ $product->id }}</td>
                     <td>{{ $product->website }}</td>
                     <td>{{ $product->tilda_uid }}</td>
@@ -36,7 +30,8 @@
     <script>
         $(document).ready(function() {
             $('table').DataTable({
-                responsive: true
+                responsive: true,
+                pageLength: 20
             });
         });
     </script>

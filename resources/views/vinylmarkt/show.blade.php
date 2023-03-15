@@ -1,87 +1,20 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="show_section shadow_inside">
-        <div class="show_left_section">
-            <div class="show_left_top_section">
-                <form action="{{ route('vinylmarkt.fillLinks') }}" class="form_data_move">
-                    <input type="number" name="fill_from" placeholder="От" min="1">
-                    <input type="number" name="fill_to" placeholder="До" min="1">
-                    <input type="submit" value="Обновить идентификаторы">
-                </form>
-
+    <div class="show_section">
+        <div class="left_section shadow_inside">
+            <div class="form_block shadow_outside">
+                <x-form-fill-links />
             </div>
-            <div class="show_left_top_section">
-                <form action="{{ route('vinylmarkt.updateProducts') }}" class="form_data_move">
-                    {{-- <input type="number" name="update_from" placeholder="От" min="1">
-                    <input type="number" name="update_to" placeholder="До" min="1"> --}}
-                    <input type="submit" value="Заполнить данные">
-                </form>
+            <div class="shadow_outside">
+                <x-form-update />
             </div>
-            <div class="show_export_fields">
-                <form action="{{ route('vinylmarkt.export') }}" method="get">
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="tilda_uid" id="tilda_uid">
-                        <label for="tilda_uid">Tilda UID </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="brand" id="brand">
-                        <label for="brand">Brand </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="description" id="description">
-                        <label for="description">Description </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="category" id="category">
-                        <label for="category">Category </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="title" id="title">
-                        <label for="title">Title </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="text" id="text">
-                        <label for="text">Text </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="photo" id="photo">
-                        <label for="photo">Photo </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="seo_title" id="seo_title">
-                        <label for="seo_title">SEO title </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="seo_descr" id="seo_descr">
-                        <label for="seo_descr">SEO descr </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="seo_keywords" id="seo_keywords">
-                        <label for="seo_keywords">SEO keywords </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="price" id="price">
-                        <label for="price">Price</label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="video" id="video">
-                        <label for="video">УРЛ Видео</label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="text_product_card" id="text_product_card">
-                        <label for="text_product_card">Текст карточки товара </label>
-                    </div>
-                    <div class="custom_checkbox_block">
-                        <input type="checkbox" name="fields[]" value="track_list" id="track_list">
-                        <label for="track_list">Трек-лист </label>
-                    </div>
-                    <input type="submit" value="Выгрузить">
-                </form>
+            <div class="shadow_outside">
+                <x-form-export />
             </div>
         </div>
 
-        <div class="visual_wrapper">
+        <div class="right_section shadow_inside">
             <x-productstable :$products />
         </div>
     </div>
@@ -93,38 +26,20 @@
             gap: 10px;
         }
 
-        .show_left_section {
+        .left_section {
             width: 250px;
             display: flex;
             flex-flow: column;
             flex-wrap: wrap;
-        }
-
-        .show_left_top_section {
-            margin-bottom: 20px;
-            width: 100%;
-            display: flex;
-            flex-wrap: wrap;
             gap: 10px;
-
         }
-
-        .show_left_top_section a {
-            display: block;
-            text-decoration: none;
-            text-align: center;
-            color: #9baacf;
-            width: 100%;
-        }
-
-        .form_data_move {
+        .left_section .form_block form{
             width: 100%;
             display: flex;
             flex-wrap: wrap;
             gap: 5px 0;
         }
-
-        .form_data_move input {
+        .left_section .form_block form input[type=number]{
             width: 50%;
             display: block;
             padding: 5px 10px;
@@ -132,11 +47,11 @@
             border: none;
         }
 
-        .visual_wrapper {
-            width: 100%;
+        .right_section {
+            flex-grow: 1;
         }
 
-        .visual_wrapper table {
+        .right_section table {
             width: 100%;
         }
 
@@ -149,6 +64,7 @@
             padding: 10px 5px;
             border-radius: 5px;
             position: relative;
+            padding-left: 30px;
         }
 
         .custom_checkbox_block input {
@@ -162,30 +78,28 @@
             transition: 0.2s;
         }
 
-        /* .custom_checkbox_block label::after {
-                                        content: '';
-                                        position: absolute;
-                                        left: 1px;
-                                        color: #5b0eeb;
-                                        display: flex;
-                                            align-items: center;
-                                            justify-content: center;
-                                            flex-shrink: 0;
-                                            flex-grow: 0;
-                                        width: 15px;
-                                        height: 15px;
+        .custom_checkbox_block label::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            color: #5b0eeb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            flex-grow: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 0.25em;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: 50% 50%;
+            box-shadow: inset 1px 1px 3px #b8b9be, inset -1px -1px 3px #fff;
+        }
 
-                                        border-radius: 0.25em;
-                                            background-repeat: no-repeat;
-                                            background-position: center center;
-                                            background-size: 50% 50%;
-                                        margin-left: 30px;
-                                        box-shadow: inset 1px 1px 3px #b8b9be, inset -1px -1px 3px #fff;
-                                    } */
-
-        /* .custom_checkbox_block input:checked~label::after {
-                                        content: '\1F5F8';
-                                    } */
+        .custom_checkbox_block input:checked~label::after {
+            content: '\1F5F8';
+        }
 
         .custom_checkbox_block input:checked~label {
             color: #5b0eeb;
