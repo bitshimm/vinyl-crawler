@@ -1,8 +1,3 @@
-@if (session()->has('successMsg'))
-    <div class="successMsg shadow_outside">
-        {{ session()->get('successMsg') }}
-    </div>
-@endif
 <div class="products_table">
     <table>
         <thead>

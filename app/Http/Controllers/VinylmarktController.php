@@ -127,7 +127,7 @@ class VinylmarktController extends Controller
             }
         }
 
-        return redirect()->route('vinylmarkt.show')->with('successMsg', 'Идентификаторы обновлены');
+        return redirect()->route('vinylmarkt-form')->with('successMsg', 'Идентификаторы обновлены');
     }
 
     public function updateProducts()
@@ -216,6 +216,6 @@ class VinylmarktController extends Controller
                 $counter++;
             }
         }
-        return redirect()->route('vinylmarkt.show')->with('successMsg', 'Обновлено: ' . $counter . ' записей');
+        return redirect()->route('vinylmarkt-form')->with('successMsg', 'Обновлено: ' . $counter . ' записей');
     }
 }

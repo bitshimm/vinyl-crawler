@@ -16,6 +16,11 @@
     <x-navbar />
     <div class="content_wrapper">
         <div class="content">
+            @if (session()->has('successMsg'))
+                <div class="successMsg shadow_outside">
+                    {{ session()->get('successMsg') }}
+                </div>
+            @endif
             @yield('content')
         </div>
     </div>
@@ -32,6 +37,7 @@
             height: 100vh;
             background-color: #e6e7ee;
         }
+
         .content_wrapper {
             margin-left: 250px;
             padding: 10px 15px;
