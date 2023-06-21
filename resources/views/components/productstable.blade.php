@@ -3,7 +3,7 @@
         {{ session()->get('successMsg') }}
     </div>
 @endif
-<div class="products_table shadow_outside">
+<div class="products_table">
     <table>
         <thead>
             <tr>
@@ -17,7 +17,6 @@
         <tbody>
             @foreach ($products as $product)
                 <tr>
-
                     <td>{{ $product->id }}</td>
                     <td>{{ $product->website }}</td>
                     <td>{{ $product->tilda_uid }}</td>
@@ -31,7 +30,7 @@
         $(document).ready(function() {
             $('table').DataTable({
                 responsive: true,
-                pageLength: 20
+                pageLength: 10
             });
         });
     </script>

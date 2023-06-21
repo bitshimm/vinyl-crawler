@@ -1,14 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-    <h1>
-        WELCOME
-    </h1>
+    <ul class="links">
+        @foreach ($links as $key => $link)
+            <li class="link"><a href="{{ $link }}" target="_blank">{{ $key }}</a></li>
+        @endforeach
+    </ul>
     <style>
         .links {
             display: grid;
             gap: 20px;
-            grid-template-columns: repeat(3, 1fr);
+            /* grid-template-columns: repeat(3, 1fr); */
             margin: auto;
             list-style-type: none;
             text-align: center

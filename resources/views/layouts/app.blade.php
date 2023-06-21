@@ -13,7 +13,13 @@
 </head>
 
 <body>
-    @yield('content')
+    <x-navbar />
+    <div class="content_wrapper">
+        <div class="content">
+            @yield('content')
+        </div>
+    </div>
+
     <style>
         * {
             margin: 0;
@@ -24,9 +30,11 @@
 
         body {
             height: 100vh;
-            display: flex;
-            flex-wrap: wrap;
             background-color: #e6e7ee;
+        }
+        .content_wrapper {
+            margin-left: 250px;
+            padding: 10px 15px;
         }
 
         .successMsg {

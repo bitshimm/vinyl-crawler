@@ -4,12 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Imports\ProductImport;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\DomCrawler\Crawler;
 
 class MainController extends Controller
 {
+    public static $lettersHash = [
+        0 => 'A',
+        1 => 'B',
+        2 => 'C',
+        3 => 'D',
+        4 => 'E',
+        5 => 'F',
+        6 => 'G',
+        7 => 'H',
+        8 => 'I',
+        9 => 'J',
+        10 => 'K',
+        11 => 'L',
+        12 => 'M',
+        13 => 'N',
+    ];
+
     public function index()
     {
         return view('home');
@@ -20,83 +39,67 @@ class MainController extends Controller
     }
     public function getAvailableUpload(Request $request)
     {
-        $providerPath = $request->file('provider')->store('getAvailableUploads', 'public');
-        $tildaPath = $request->file('tilda')->store('getAvailableUploads', 'public');
+        header_remove();
 
-        // $providerProdcuts = Excel::import(new ProductImport, $providerPath);
-        // $tildaProducts = Excel::toArray(new ProductImport, $tildaPath)[0];
-        // $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
-        // $reader->setReadDataOnly(true);
-        // $spreadsheet = $reader->load(public_path(Storage::url($providerPath)));
+        $date = Carbon::now()->toDateString();
+        $marginPercent = 0.2;
 
-        // $sheet = $spreadsheet->getActiveSheet();
-        // $data = $sheet->toArray();
-        // for ($i=1; $i < $sheet->getHighestDataRow(); $i++) {
-        //     $data = [
-        //         $sheet->getCell("A$i")->getValue(),
-        //         $sheet->getCell("B$i")->getValue(),
-        //         $sheet->getCell("C$i")->getValue(),
-        //         $sheet->getCell("D$i")->getValue(),
-        //         $sheet->getCell("E$i")->getValue(),
-        //     ];
+        $providerFilename = 'provider-' . $date . '.xlsx';
+        $tildaFilename = 'tilda-' . $date . '.csv';
 
-        //     // dump($data);
-        // }
-        // $spreadsheet->getActiveSheet()->getStyle('B2')
-        // ->getFont()->getColor()->setARGB(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_RED);
-        // $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        // $writer->save("05featuredemo.xlsx");
-        // $data = $sheet->getCell('B8')->getValue();
+        $providerPath = $request->file('provider')->storeAs('', $providerFilename, 'public');
+        $providerReader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+        $providerSpreadsheet = $providerReader->load(public_path(Storage::url($providerPath)));
+        $providerSheet = $providerSpreadsheet->getActiveSheet();
 
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
-        $spreadsheet = $reader->load(public_path(Storage::url($providerPath)));
-        // $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(public_path(Storage::url($providerPath)));
+        $providerData = [];
+        for ($i = 5; $i <= $providerSheet->getHighestDataRow(); $i++) {
+            $providerData[$i] = (int) $providerSheet->getCell("E$i")->getValue();
+        }
 
-        //change it
-        $sheet = $spreadsheet->getActiveSheet();
-        for ($i = 1; $i < $sheet->getHighestDataRow(); $i++) {
-            // $data = [
-            //     $sheet->getCell("A$i")->getValue(),
-            //     $sheet->getCell("B$i")->getValue(),
-            //     $sheet->getCell("C$i")->getValue(),
-            //     $sheet->getCell("D$i")->getValue(),
-            //     $sheet->getCell("E$i")->getValue(),
-            // ];
-            if ($i % 5 == 0) {
-                $sheet->getStyle("A$i")
-                    ->getFill()
-                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                    ->getStartColor()
-                    ->setARGB(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_YELLOW);
+        $tildaPath = $request->file('tilda')->storeAs('', $tildaFilename, 'public');
+        $tildaReader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+        $tildaSpreadsheet = $tildaReader->load(public_path(Storage::url($tildaPath)));
+        $tildaSheet = $tildaSpreadsheet->getActiveSheet();
+
+        $tildaArray = $tildaSheet->toArray();
+        $idxColumnPriceTilda = array_search('Price', $tildaArray[0]);
+        $letterColumnPriceTilda = self::$lettersHash[$idxColumnPriceTilda];
+
+        $tildaData = [];
+        for ($i = 2; $i <= $tildaSheet->getHighestDataRow(); $i++) {
+            $tildaData[$i] = (int) $tildaSheet->getCell("C$i")->getValue();
+        }
+
+        foreach ($tildaData as $tildaRowId => $tildaCode) {
+            foreach ($providerData as $providerRowId => $providerCode) {
+                if ($tildaCode == $providerCode) {
+                    $providerPrice = $providerSheet->getCell("I$providerRowId",)->getValue();
+                    $tildaPrice = $tildaSheet->getCell($letterColumnPriceTilda . $tildaRowId)->getValue();
+                    $tildaSheet->setCellValue(
+                        $letterColumnPriceTilda . $tildaRowId,
+                        $providerPrice + ($providerPrice * $marginPercent)
+                    );
+                    $providerSheet->getStyle("A$providerRowId")
+                        ->getFill()
+                        ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                        ->getStartColor()
+                        ->setARGB(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_YELLOW);
+                }
             }
         }
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        $writer->save(public_path(Storage::url('yourspreadsheet.xlsx')));
-        // return Storage::download('yourspreadsheet.xlsx');
-        dd(storage_path());
-        $tildaData = [];
-        $providerData = [];
 
-        // dd($data);
-        // dd($tilda_products);
-        foreach ($tilda_products as $product) {
-            $code = (int) $product[2];
-            $lastHash = $code;
-            $tildaData[$lastHash] = $product;
-            // dump($product[0]);
-        }
+        $providerWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($providerSpreadsheet);
+        $providerWriter->save(public_path(Storage::url($providerFilename)));
+        $tildaWriter = new \PhpOffice\PhpSpreadsheet\Writer\Csv($tildaSpreadsheet);
+        $tildaWriter->save(public_path(Storage::url($tildaFilename)));
 
-
-        foreach ($provider_products as $product) {
-            $code = (int) $product[4];
-            $lastHash = $code;
-            $providerData[$lastHash] = $product;
-        }
-
-        // dd($providerData);
-        // $collection = Excel::toCollection(new ProductImport, 'provider_price2.xlsx');
-        dd(array_intersect_key($tildaData, $providerData));
-        // Excel::import(new ProductImport, 'provider+price.xlsx');
-        dd($providerPath2);
+        $links = [
+            'provider' => Storage::url($providerFilename),
+            'tilda' => Storage::url($tildaFilename),
+        ];
+        return view('get-available-download', compact('links')); 
+        dd(Storage::url($providerFilename), Storage::url($tildaFilename));
+        return Storage::download($providerFilename);
     }
 }

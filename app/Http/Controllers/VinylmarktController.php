@@ -15,11 +15,9 @@ class VinylmarktController extends Controller
 {
     public static $domain = 'vinylmarkt.ru';
 
-    public function show()
+    public function form()
     {
-        // phpinfo();die();
-        $products = Product::where('website', self::$domain)->get();
-        return view('vinylmarkt.show', compact('products'));
+        return view('vinylmarkt.show');
     }
 
     public function export(Request $request)
@@ -79,7 +77,7 @@ class VinylmarktController extends Controller
 
         unset($date);
 
-        return Storage::download(Storage::url($archivePath));
+        return Storage::download($archivePath);
     }
 
     public function fillLinks(Request $request)

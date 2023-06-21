@@ -1,58 +1,31 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="show_section">
-        <div class="left_section shadow_inside">
-            <div class="form_block shadow_outside">
-                <x-form-fill-links />
-            </div>
-            <div class="shadow_outside">
-                <x-form-update />
-            </div>
-            <div class="shadow_outside">
-                <x-form-export />
-            </div>
+    <div class="shadow_inside">
+        <div class="form_block shadow_outside">
+            <x-form-fill-links />
         </div>
-
-        <div class="right_section shadow_inside">
-            <x-productstable :$products />
+        <div class="shadow_outside">
+            <x-form-update />
+        </div>
+        <div class="shadow_outside">
+            <x-form-export />
         </div>
     </div>
     <style>
-        .show_section {
-            padding: 10px;
-            display: flex;
-            width: 100%;
-            gap: 10px;
-        }
-
-        .left_section {
-            width: 250px;
-            display: flex;
-            flex-flow: column;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .left_section .form_block form{
+        .form_block form {
             width: 100%;
             display: flex;
             flex-wrap: wrap;
             gap: 5px 0;
         }
-        .left_section .form_block form input[type=number]{
+
+        .form_block form input[type=number] {
             width: 50%;
             display: block;
             padding: 5px 10px;
             font-size: 16px;
             border: none;
-        }
-
-        .right_section {
-            flex-grow: 1;
-        }
-
-        .right_section table {
-            width: 100%;
         }
 
         .custom_checkbox_block label {
