@@ -13,6 +13,7 @@ class Product extends Model
         'website',
         'product_url',
         'tilda_uid',
+        'code',
         'brand',
         'description',
         'category',

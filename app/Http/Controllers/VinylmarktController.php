@@ -7,17 +7,18 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\UnableToRetrieveMetadata;
 use Symfony\Component\DomCrawler\Crawler;
 use ZipArchive;
 
 class VinylmarktController extends Controller
 {
-    public static $domen = 'vinylmarkt.ru';
+    public static $domain = 'vinylmarkt.ru';
 
     public function show()
     {
         // phpinfo();die();
-        $products = Product::where('website', self::$domen)->get();
+        $products = Product::where('website', self::$domain)->get();
         return view('vinylmarkt.show', compact('products'));
     }
 
@@ -27,7 +28,7 @@ class VinylmarktController extends Controller
         $getFields = $request->fields;
 
         $products = Product::selectRaw($getFields ? implode(',', $getFields) : '*')
-            ->where('website', '=', self::$domen)
+            ->where('website', '=', self::$domain)
             ->where('tilda_uid', '!=', 0)
             ->whereNotNull('photo')
             ->orderBy('updated_at', 'desc')
@@ -37,8 +38,8 @@ class VinylmarktController extends Controller
 
         $date = Carbon::now()->toDateString();
         $publicDisk = Storage::disk('public');
-        $filesDirectory = self::$domen . '/' . $date;
-        $archivePath = self::$domen . '/' . $date . '.zip';
+        $filesDirectory = self::$domain . '/' . $date;
+        $archivePath = self::$domain . '/' . $date . '.zip';
         $filesCounter = 0;
 
         if (Storage::exists($archivePath)) {
@@ -69,16 +70,16 @@ class VinylmarktController extends Controller
             }
 
             $zip = new ZipArchive();
-            $zip->open(public_path('storage/' . $archivePath), ZipArchive::CREATE);
+            $zip->open(public_path(Storage::url($archivePath)), ZipArchive::CREATE);
             $zip->addFile('storage/' . $filepath);
             $zip->close();
         }
 
-        Storage::deleteDirectory($filesDirectory);
+        $publicDisk->deleteDirectory($filesDirectory);
 
         unset($date);
 
-        return Storage::download($archivePath);
+        return Storage::download(Storage::url($archivePath));
     }
 
     public function fillLinks(Request $request)
@@ -107,12 +108,11 @@ class VinylmarktController extends Controller
                 $crawler = new Crawler(null, $PaginationPage);
                 $crawler->addHtmlContent($html, 'UTF-8');
 
-                $catalogBlockAtPage = $crawler->filter('div.ajax_load.block > div.top_wrapper.row.margin0.show_un_props > div.catalog_block .item_block')->each(function ($node, $i) {
-
+                $catalogBlockAtPage = $crawler->filter('div.ajax_load.block > div.top_wrapper.margin0.show_un_props > div.catalog_block .item_block')->each(function ($node, $i) {
                     $ProductRelativeLink = $node->filter('div.item_info.N > div.item_info--top_block > div.item-title > a')->attr('href');
 
                     Product::updateOrCreate([
-                        'website' => self::$domen,
+                        'website' => self::$domain,
                         'product_url' => $ProductRelativeLink
                     ]);
 
@@ -134,7 +134,7 @@ class VinylmarktController extends Controller
 
     public function updateProducts()
     {
-        $products = Product::where('website', '=', self::$domen)
+        $products = Product::where('website', '=', self::$domain)
             ->where('tilda_uid', '=', 0)
             ->orderBy('updated_at', 'desc')->get();
         $counter = 0;
@@ -144,14 +144,14 @@ class VinylmarktController extends Controller
                 $crawler->addHtmlContent($productHtml, 'UTF-8');
 
                 /* brand */
-                if ($crawler->filter('meta[itemprop=brand]')->count()) {
-                    $product->brand = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
+                if ($crawler->filter('div[itemtype="https://schema.org/Brand"] meta[itemprop=name]')->count()) {
+                    $product->brand = ucwords($crawler->filter('div[itemtype="https://schema.org/Brand"] meta[itemprop=name]')->attr('content'));
                 } else {
                     continue;
                 }
 
                 /* description */
-                $product->description = ucwords($crawler->filter('meta[itemprop=brand]')->attr('content'));
+                $product->description = ucwords($product->brand);
 
                 /* category */
                 $_category = explode('/', $crawler->filter('meta[itemprop=category]')->attr('content'));
@@ -172,7 +172,7 @@ class VinylmarktController extends Controller
                     $property = explode(' => ', $property);
                     $product->text .= '<p style=""font-size: 20px;""><span style=""font-weight: 400;"">' . $property[0] . ':</span><span> ' . $property[1] . '</span></p>';
                     if ($property[0] == 'Баркод' && is_numeric($property[1])) {
-                        $product->tilda_uid = $property[1];
+                        $product->tilda_uid = $product->code = $property[1];
                     }
                 }
 

@@ -2,9 +2,8 @@
 
 @section('content')
     <ul class="links">
-        <li class="link"><a href="{{ route('vinylmarkt.show') }}">vinymarkt</a></li>
-        <li class="link"><a href="">vinymarkt 2</a></li>
-        <li class="link"><a href="">vinymarkt 3</a></li>
+        <li class="link"><a href="{{ route('vinylmarkt.show') }}">таблица</a></li>
+        <li class="link"><a href="{{ route('get-available') }}">получить доступные</a></li>
     </ul>
     <style>
         .links {
